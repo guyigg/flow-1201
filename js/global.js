@@ -228,6 +228,7 @@ window.onload=function(){
     InitDraw.prototype.mouseOver = function(obj){
     	var self = this;
     	var oDiv = self.funDiv($(obj).attr('id'),$(obj).width(),$(obj).height(),$(obj).attr('divW'),$(obj).attr('divH'));
+    	console.log()
     	console.log(oDiv);
     	$(obj).on('mouseover',function(){
     		$('#designer_canvas').append(oDiv);
