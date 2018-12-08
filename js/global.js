@@ -212,32 +212,47 @@ window.onload=function(){
         };
     };
 
-
+	//var arrBox = [];//储存所有self.shape_contour和对于的圆圈div
     //画布操作构造函数
     function InitDraw(){
         this.shape_box = null,
         this.shape_contour = null,
         this._canvas = null,
         this.zindex = 1,
-        this.leftDrag(),
         this.divW = null,
         this.divH = null,
-        this.att = null;
+        this.att = null,
+        this.arrBox = [];
+        this.leftDrag();
     }
     //右边操作
-    InitDraw.prototype.mouseOver = function(obj){
-    	var self = this;
-    	var oDiv = self.funDiv($(obj).attr('id'),$(obj).width(),$(obj).height(),$(obj).attr('divW'),$(obj).attr('divH'));
-    	console.log()
-    	console.log(oDiv);
-    	$(obj).on('mouseover',function(){
-    		$('#designer_canvas').append(oDiv);
+    var mouseOver = function(obj,objFun){
+  		$(obj).on('mouseover',function(){
+    		$('#designer_canvas').append(objFun);
+    		//$('#canvas_container').css('cursor','move');
+    		$(this).mousemove(function(ev){
+    			
+    			//console.log("left:"+$(objFun).offset().top);
+    			//console.log(disY);
+//  			if(disX > boxL){
+//  				
+//  			}
+    			//console.log(disX);
+    		})
     	});
     	$(obj).on('mouseout',function(){
-    		$(oDiv).remove();
-    		
+    		$(objFun).remove();
+    		//$('#canvas_container').css('cursor','default')
     	});
     }
+    $('#canvas_container').mousemove(function(ev){
+    	var ev = ev || event;
+		var disX = ev.clientX;
+		var disY = ev.clientY;
+		//var boxL = $(this).offset().left;
+		//var boxT = $(this).offset().top;
+		//console.log($('.shape_box'));
+    })
     //左边拖动操作
     InitDraw.prototype.leftDrag = function(){
     	var self = this;
@@ -255,17 +270,19 @@ window.onload=function(){
     	$('#designer').on('mousedown','#shape_panel .panel_box',function(ev){
             var ev = ev || event;
             var thisBox = $(this);
-            var parentW = thisBox.parents('#shape_panel').width();
-            var parentH = thisBox.parents('#shape_panel').height();
+            var parentW = thisBox.parents('#shape_panel').width();//左边栏的宽度
+            var parentH = thisBox.parents('#shape_panel').height();//左边栏的高度
             var layoutNewH = $('#designer_layout').scrollTop();//layout当前滚动距离顶部高度
             var layoutNewW = $('#designer_layout').scrollLeft();//layout当前滚动距离左边宽度
-            var differH = designer_canvas.offsetTop - layoutNewH + headerH;//当前layout距离可是区距离
+            var differH = designer_canvas.offsetTop - layoutNewH + headerH;//当前layout距离可视区距离
             var differW = designer_canvas.offsetLeft - layoutNewW + parentW;
+            var disScrollW = Math.round(layoutNewW)-_layoutInitW;
+            var disScrollH = Math.round(layoutNewH)-_layoutInitH;
             var l = thisBox[0].offsetLeft;
             var t = thisBox[0].offsetTop;
             var disX = ev.clientX - l;
             var disY = ev.clientY - t;
-            self.drawDragCanva($("#creating_shape_canvas")[0],thisBox.children()[0]);
+            self.drawDragCanva($("#creating_shape_canvas")[0],thisBox.children()[0]);//左边拖动图的画布
             $('#creating_shape_container').css({'display':'block','top':'0','left':'0','width':parentW+'px','height':parentH+'px'});
             $('#creating_shape_canvas').css({'left':l+'px','top':t+'px'});
             var off = true;
@@ -280,32 +297,38 @@ window.onload=function(){
                 var T = ev.clientY - disY;
                 $('#creating_shape_canvas').css({'left':L+'px','top':T+'px'});
                 if(ev.clientX > parentW){
-                	self.divH = Math.round(layoutNewH)-_layoutInitH>=0 ? ev.clientY-headerH-10-dH/2 : ev.clientY-differH-dH/2;
-                	self.divW = Math.round(layoutNewW)-_layoutInitW>=0 ? ev.clientX-parentW-10-dW/2 : ev.clientX-differW-dH/2;
+                	self.divH = Math.round(layoutNewH)-_layoutInitH >= 0 ? ev.clientY-headerH-8-dH/2+disScrollH : ev.clientY-differH-dH/2;
+                	self.divW = Math.round(layoutNewW)-_layoutInitW >= 0 ? ev.clientX-parentW-8-dW/2+disScrollW : ev.clientX-differW-dH/2;
                     self.shape_box.css({'left':self.divW + 'px','top':self.divH + 'px'});
-                    self.shape_box.attr({divH:self.divH,divW:self.divW});
+                    self.shape_box.attr({'divW':self.divW,'divH':self.divH});
+                    
                     if(off){
                         $('#designer_canvas').append(self.shape_box);
                         off = !off;
                     }
                 }
-                return 
             };
             document.onmouseup = function(ev){
                 var ev = ev || event;
+                var obj = {};
                 if(!off){
                     if(ev.clientX < parentW || ev.clientY < headerH || ev.clientX > visualW-10 || ev.clientY > visualH-10){
                         self.shape_box.remove();
                     }else{
-                    	self.mouseOver(self.shape_box);
+                  		self.shape_box.css({'z-index':self.zindex ++});
                     	self.shape_contour = self.funDiv(self.shape_box.attr('id'),dW,dH,self.divW,self.divH);//生成连线圆圈功能div
-                    	self.shape_box.css({'z-index':self.zindex ++});
+                    	obj = {shape_box:self.shape_box,shape_contour:self.shape_contour,id:self.shape_box.attr('id')};
+			            self.arrBox.push(obj);
+			            if(self.arrBox.length != 1){
+			            	mouseOver(self.arrBox[self.arrBox.length-2].shape_box,self.arrBox[self.arrBox.length-2].shape_contour);
+			            }
+						//mouseOver(self.shape_box,self.shape_contour);
                         self.drag(self.shape_box[0],self.shape_contour);
                         if($('.shape_contour').length > 0){
                         	$('.shape_contour').remove();
                         }
-                        
                         $('#designer_canvas').append(self.shape_contour);
+                        
                     }
                 }
                 $('#creating_shape_container').css({'display':'none'});
@@ -316,18 +339,29 @@ window.onload=function(){
         });
     }
     //画布内拖拽
-    InitDraw.prototype.drag = function(obj,funDiv){
+    InitDraw.prototype.drag = function(obj,objFun){
+    	var self = this;
         obj.onmousedown = function(ev){
             var ev = ev || event;
             var disX = ev.clientX - this.offsetLeft;
             var disY = ev.clientY - this.offsetTop;
+            var length = self.arrBox.length;
+            if($('.shape_contour:eq(0)').attr('forshape') != $(obj).attr('id')){
+                $('.shape_contour:eq(0)').remove();
+            }
+            for(var i=0;i<length;i++){
+                mouseOver(self.arrBox[i].shape_box, self.arrBox[i].shape_contour);
+            }
+            $(obj).unbind('mouseover');
+            $(obj).unbind('mouseout');
+            
             document.onmousemove = function(ev){
                 var ev = ev || event;
                 var L = ev.clientX - disX;
                 var T = ev.clientY - disY;
                 obj.style.left = L+'px';
                 obj.style.top = T+'px';
-                funDiv.css({'left':L+10,'top':T+10});
+               	objFun.css({'left':L+10,'top':T+10});
             }
             document.onmouseup = function(){
                 document.onmousemove = null;
@@ -343,7 +377,7 @@ window.onload=function(){
     //生成连线圆圈功能div
     InitDraw.prototype.funDiv = function(id,w,h,l,t){
         oDiv = $('<div class="shape_contour" forshape="'+id+'"></div>');
-        oDiv.css({'left':l+10,'top':t+10,'z-index':this.zindex});
+        oDiv.css({'left':(Number(l) + 10) + 'px','top':(Number(t) + 10) +'px','z-index':this.zindex});
         var arr = [];
         var elem = null;
     	for(var i in shapeName){
@@ -351,11 +385,17 @@ window.onload=function(){
 	    		arr = shapeName[i].connectCircle(w,h);
 	    		for(var j = 0;j < arr.length; j ++){
 			    	elem = $('<div class="shape_anchor"></div>');
-			    	elem.css({'left':arr[j].left,'top':arr[j].top})
+			    	elem.css({'left':arr[j].left,'top':arr[j].top,'z-index':this.zindex});
 			        oDiv.append(elem);
 			    }
     		}
     	}
+    	//console.log(oDiv);
+//  	oDiv.children().each(function(){
+//  		$(this).on('mouseover',function(){
+//  			$(this).css('cursor','crosshair');
+//  		})
+//  	})
     	return oDiv;
     }
     //生成canvas
